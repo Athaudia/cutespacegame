@@ -67,7 +67,7 @@ class Ship < Chingu::GameObject
 		@baccel = 0.05
 		@rspeed = 1
 		@saccel = 0.05
-		@modules = [Weapon.new(:type => $weapons[8], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off])]
+		@modules = [Weapon.new(:type => $weapons[0], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off])]
 		@health = @type[:armor]
 		self.angle = 0.0
 		cache_bounding_circle
@@ -323,6 +323,8 @@ class Popup < Chingu::GameObject
 	end
 
 	def update
+		if @x+@w >= 800 then @x -= @w end
+		if @y+@h >= 600 then @y -= @h end
 		@stuff.each {|s| s.x += @x-@lx; s.y += @y-@ly}
 		@lx, @ly = @x, @y
 	end
