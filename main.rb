@@ -196,6 +196,20 @@ class Bullet < Chingu::GameObject
 
 	def dmg; @type[:dmg]*self.alpha/255; end
 
+	def hit
+		oh = (@type[:onhit] or :explode)
+		puts @type.inspect
+		case oh
+		when :explode
+			explode
+		end
+	end
+
+	def explode
+		if @type[:onexplode] then Weapon.new(:type => @type[:onexplode], :bullet_class => self.class).shoot(@x, @y, 0, 0, 0.0) end
+		destroy
+	end
+
 	def update
 		@x += @velocity_x
 		@y += @velocity_y
@@ -204,7 +218,7 @@ class Bullet < Chingu::GameObject
 			self.alpha = (@type[:fade] - -@timer) * 255 / @type[:fade]
 		end
 
-		if self.alpha <= 0 then destroy end
+		if self.alpha <= 0 then explode	end
 	end
 end
 
@@ -588,12 +602,12 @@ class Game < Chingu::GameState
 
 		PlayerBullet.each_collision(AiShip) do |bullet, enemy|
 			enemy.hit_by bullet
-			bullet.destroy
+			bullet.hit
 		end
 
 		EnemyBullet.each_collision(PlayerShip) do |bullet, player|
 			player.hit_by bullet
-			bullet.destroy
+			bullet.hit
 		end
 
 		Shop.each_collision(PlayerShip) do |shop, player|
@@ -615,19 +629,22 @@ $bullets = []
 $bullets << {timer: 40, fade: 10, speed: 5.0,  dmg: 10,  img: "bullet001.png"}
 $bullets << {timer: 20, fade: 10, speed: 5.0,  dmg: 2,   img: "bullet001.png"}
 $bullets << {timer: 40, fade: 10, speed: 10.0, dmg: 200, img: "bullet002.png"}
+$bullets << {timer: 15, fade: 1,  speed: 10.0,  dmg: 0,   img: "bullet003.png", onhit: :nothing, onexplode:
+	{bullet: $bullets[0], multi: 128, spread_mode: :angle, multi_spread: 360/128.0}}
 $weapons = []
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon001.png", name: "Pink Pellet",        price: 100}
-$weapons << {bullet: $bullets[0], cooldown: 5,  icon: "icon002.png", name: "P.P. Turbo",         price: 500}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon003.png", name: "P.P. Duo",           price: 500,   multi: 2}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon003.png", name: "P.P. Duo Spread",    price: 500,   multi: 2, spread_mode: :angle, multi_spread: 10}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon004.png", name: "P.P. Triple",        price: 1000,  multi: 3}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon004.png", name: "P.P. Triple Spread", price: 1000,  multi: 3, spread_mode: :angle, multi_spread: 10}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon005.png", name: "P.P. Quad",          price: 2000,  multi: 4}
-$weapons << {bullet: $bullets[0], cooldown: 10, icon: "icon005.png", name: "P.P. Quad Spread",   price: 2000,  multi: 4, spread_mode: :angle, multi_spread: 10}
-$weapons << {bullet: $bullets[1], cooldown: 2,  icon: "icon005.png", name: "P.P. Star",          price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => 3}
-$weapons << {bullet: $bullets[1], cooldown: 2,  icon: "icon005.png", name: "P.P. Star CCW",      price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => -3}
-$weapons << {bullet: $bullets[2], cooldown: 60, icon: "icon006.png", name: "Pink Bolt",          price: 10000, recoil: 2}
-$weapons << {bullet: $bullets[2], cooldown: 60, icon: "icon006.png", name: "P.B. Extreme",       price: 10000, multi: 3, spread_mode: :angle, multi_spread: 8, recoil: 4}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon001.png", name: "Pink Pellet",        price: 100}
+$weapons << {bullet: $bullets[0], cooldown: 5,   icon: "icon002.png", name: "P.P. Turbo",         price: 500}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon003.png", name: "P.P. Duo",           price: 500,   multi: 2}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon003.png", name: "P.P. Duo Spread",    price: 500,   multi: 2, spread_mode: :angle, multi_spread: 10}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon004.png", name: "P.P. Triple",        price: 1000,  multi: 3}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon004.png", name: "P.P. Triple Spread", price: 1000,  multi: 3, spread_mode: :angle, multi_spread: 10}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon005.png", name: "P.P. Quad",          price: 2000,  multi: 4}
+$weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon005.png", name: "P.P. Quad Spread",   price: 2000,  multi: 4, spread_mode: :angle, multi_spread: 10}
+$weapons << {bullet: $bullets[1], cooldown: 2,   icon: "icon005.png", name: "P.P. Star",          price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => 3}
+$weapons << {bullet: $bullets[1], cooldown: 2,   icon: "icon005.png", name: "P.P. Star CCW",      price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => -3}
+$weapons << {bullet: $bullets[2], cooldown: 60,  icon: "icon006.png", name: "Pink Bolt",          price: 10000, recoil: 2}
+$weapons << {bullet: $bullets[2], cooldown: 60,  icon: "icon006.png", name: "P.B. Extreme",       price: 10000, multi: 3, spread_mode: :angle, multi_spread: 8, recoil: 4}
+$weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon006.png", name: "Red Bomb",           price: 10000, recoil: 2}
 $money = 1000000
 Dir.chdir File.dirname($0)
 Main.new.show
