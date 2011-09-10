@@ -72,6 +72,18 @@ class Ship < Chingu::GameObject
 		cache_bounding_circle
 	end
 
+	def upgrade(type)
+		w = (self.worth or 0)
+		$money += w
+		@modules = []
+		@type = type
+		if @health > @type[:armor] then @health = @type[:armor] end
+	end
+
+	def worth
+		@modules.map {|m| if m then m.type[:price] else 0 end}.inject {|a,b| a+b}
+	end
+
 	def update
 		self.angle += @rs
 		@rs *= 0.8
@@ -318,7 +330,7 @@ class ShopState < Chingu::GameState
 		@ship = ship
 		@tick = 0
 		@active_slot = 0
-		@shipimg = Img.create(:x => 400, :y => 300, :img => "ship001.png", :scale => 32, :alpha => 50)
+		@shipimg = Img.create(:x => 400, :y => 300, :img => ship.type[:img], :scale => 32, :alpha => 50)
 		Chingu::Text.create("Shop", :x => 10, :y => 10, :factor_x => 2, :factor_y => 2)
 		@slot_imgs = []
 		@slot_txts = []
@@ -333,9 +345,14 @@ class ShopState < Chingu::GameState
 			@slot_imgs << Img.create(:x => 20, :y => 108+30*i, :img => icon, :scale => 2)
 		end
 
-		$weapons.each_with_index do |wep,i|
-			Img.create :x => 300+30*(i%16), :y => 108+30*(i/16), :img => wep[:icon], :scale => 2
-		end
+    $weapons.each_with_index do |wep,i|
+      Img.create :x => 300+30*(i%16), :y => 108+30*(i/16), :img => wep[:icon], :scale => 2
+    end
+
+    $ships.each_with_index do |ship,i|
+      Img.create :x => 300+30*((i+$weapons.size)%16), :y => 108+30*((i+$weapons.size)/16), :img => ship[:img], :scale => 2
+    end
+
 		self.input = {:esc => :pop_game_state}
 	end
 
@@ -345,7 +362,7 @@ class ShopState < Chingu::GameState
 			tx = ($window.mouse_x-(300-16)).to_i/30
 			ty = ($window.mouse_y-(108-16)).to_i/30
 			if tx < 16 then	@t = tx+ty*16 end
-			if @t and @t >= $weapons.size then @t = nil end
+			if @t and @t >= $weapons.size + $ships.size then @t = nil end
 		elsif $window.mouse_x <= 33 and $window.mouse_y >= 108-16
 			@t = ($window.mouse_y-(108-16)).to_i/30	+ 10000
 			if @t >= @ship.type[:slots].size + 10000 then @t = nil end
@@ -354,29 +371,41 @@ class ShopState < Chingu::GameState
 		if @t != @last_t
 			@popup and @popup.destroy
 			if @t and @t < 1000
-				dmg = $weapons[@t][:bullet][:dmg].to_f
-				rpm = 3600.0/$weapons[@t][:cooldown]
-				dps = dmg*rpm/60*($weapons[@t][:multi] or 1)
-				price = $weapons[@t][:price]
-				curmodprice = 0
-				if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
-				price_diff = curmodprice - price
-				@popup = Popup.create(:w => 200, :h => 140, :text => [
-				{:x=>10,:y=>10,:text=>$weapons[@t][:name]},
-				{:x=>10,:y=>30,:text=>"Dmg: " + dmg.to_s},
-				{:x=>10,:y=>50,:text=>"RPM: " + rpm.to_s},
-				{:x=>10,:y=>70,:text=>"Dps: " + dps.to_s},
-				{:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
-				if price_diff < 0
-					{:x=>190,:y=>110,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
-				else
-					{:x=>190,:y=>110,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
-				end
-				])
+        if @t < $weapons.size
+          dmg = $weapons[@t][:bullet][:dmg].to_f
+          rpm = 3600.0/$weapons[@t][:cooldown]
+          dps = dmg*rpm/60*($weapons[@t][:multi] or 1)
+          price = $weapons[@t][:price]
+          curmodprice = 0
+          if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
+          price_diff = curmodprice - price
+          @popup = Popup.create(:w => 200, :h => 140, :text => [
+          {:x=>10,:y=>10,:text=>$weapons[@t][:name]},
+          {:x=>10,:y=>30,:text=>"Dmg: " + dmg.to_s},
+          {:x=>10,:y=>50,:text=>"RPM: " + rpm.to_s},
+          {:x=>10,:y=>70,:text=>"Dps: " + dps.to_s},
+          {:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
+          if price_diff < 0
+            {:x=>190,:y=>110,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
+          else
+            {:x=>190,:y=>110,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
+          end
+          ])
+        elsif @t < $weapons.size + $ships.size
+          puts @t
+          ship = $ships[@t - $weapons.size]
+          puts ship
+          @popup = Popup.create(:w => 200, :h => 140, :text =>[
+          {x:10, y:10, text: ship[:name]}
+          ])
+        else
+          puts @t
+        end
 			elsif @t and @t >= 10000
 				slot = @ship.type[:slots][@t-10000]
 				mt = @ship.modules[@t-10000]
 				if mt then mt = mt.type end
+#        if mt and mt[:type] != slot[:type] then mt = nil end
 				if mt
 					dmg = mt[:bullet][:dmg].to_f
 					rpm = 3600.0/mt[:cooldown]
@@ -402,18 +431,25 @@ class ShopState < Chingu::GameState
 
 		if $window.button_down?(Gosu::MsLeft) and @t
 			if @t < 10000
-				price = $weapons[@t][:price]
-				curmodprice = 0
-				if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
-				price_diff = curmodprice - price
-				if $money > price_diff
-					@ship.modules[@active_slot] = Weapon.new({:type=>$weapons[@t], :bullet_class=>PlayerBullet, :off => @ship.type[:slots][@active_slot][:off]})
-					@slot_imgs[@active_slot].destroy
-					@slot_imgs[@active_slot] = Img.create(:x => @slot_imgs[@active_slot].x, :y => @slot_imgs[@active_slot].y, :img => $weapons[@t][:icon], :scale => 2)
-					@slot_txts[@active_slot].destroy
-					@slot_txts[@active_slot] = Chingu::Text.create(:x => @slot_txts[@active_slot].x, :y => @slot_txts[@active_slot].y, :text => $weapons[@t][:name])
-					$money -= price_diff
-				end
+        if @t < $weapons.size
+          price = $weapons[@t][:price]
+          curmodprice = 0
+          if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
+          price_diff = curmodprice - price
+          if $money > price_diff
+            @ship.modules[@active_slot] = Weapon.new({:type=>$weapons[@t], :bullet_class=>PlayerBullet, :off => @ship.type[:slots][@active_slot][:off]})
+            @slot_imgs[@active_slot].destroy
+            @slot_imgs[@active_slot] = Img.create(:x => @slot_imgs[@active_slot].x, :y => @slot_imgs[@active_slot].y, :img => $weapons[@t][:icon], :scale => 2)
+            @slot_txts[@active_slot].destroy
+            @slot_txts[@active_slot] = Chingu::Text.create(:x => @slot_txts[@active_slot].x, :y => @slot_txts[@active_slot].y, :text => $weapons[@t][:name])
+            $money += price_diff
+          end
+        elsif @t < $weapons.size + $ships.size
+          ship = $ships[@t-$weapons.size]
+          @ship.upgrade ship
+          pop_game_state
+          push_game_state ShopState.new(@ship)
+        end
 			else
 				@slot_imgs[@active_slot].alpha = 255
 				@active_slot = @t - 10000
@@ -471,7 +507,7 @@ class Game < Chingu::GameState
 		Shop.create(:x => 100,  :y => 2899)
 		Shop.create(:x => 2899, :y => 100)
 		Shop.create(:x => 2899, :y => 2899)
-		@player = PlayerShip.create(:x => 1000, :y => 1000, :type => $ships[0])
+		@player = PlayerShip.create(:x => 100, :y => 100, :type => $ships[0])
 		@player.input = {
 			:holding_h => :turn_left,
 			:holding_k => :turn_right,
@@ -573,8 +609,8 @@ end
 
 puts "Preparing game, please wait..."
 $ships = []
-$ships << {:img => "ship001.png", :armor => 100, :slots => [{type: :small_wep, off: [0,5]}]}
-$ships << {:img => "ship002.png", :armor => 100, :slots => [{type: :small_wep, off: [-6,0]},{type: :small_wep, off: [6,0]}]}
+$ships << {img: "ship001.png", armor: 100, name: "Amy",   slots: [{type: :small_wep, off: [0,5]}]}
+$ships << {img: "ship002.png", armor: 100, name: "Allie", slots: [{type: :small_wep, off: [-6,0]},{type: :small_wep, off: [6,0]}]}
 $bullets = []
 $bullets << {timer: 40, fade: 10, speed: 5.0,  dmg: 10,  img: "bullet001.png"}
 $bullets << {timer: 20, fade: 10, speed: 5.0,  dmg: 2,   img: "bullet001.png"}
