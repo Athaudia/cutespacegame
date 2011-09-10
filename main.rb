@@ -1,6 +1,9 @@
 $startuptime = Time.now
 $config = {:stars => true}
 $config = {:stars => :light}
+
+VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
+
 #$config = {:stars => false}
 #require 'gosu'
 require 'chingu'
@@ -349,6 +352,7 @@ class ShopState < Chingu::GameState
 		@active_slot = 0
 		@shipimg = Img.create(:x => 400, :y => 300, :img => ship.type[:img], :scale => 32, :alpha => 50)
 		Chingu::Text.create("Shop", :x => 10, :y => 10, :factor_x => 2, :factor_y => 2)
+		Chingu::Text.create("version: #{VERSION}", :x => 0, :y => 588)
 		@slot_imgs = []
 		@slot_txts = []
 		@ship.type[:slots].each_with_index do |slot,i|
