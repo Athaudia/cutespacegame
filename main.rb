@@ -2,6 +2,7 @@ $startuptime = Time.now
 $config = {:stars => true}
 $config = {:stars => :light}
 #$config = {:stars => false}
+#require 'gosu'
 require 'chingu'
 require 'texplay'
 include Gosu
@@ -226,7 +227,7 @@ class EnemyBullet < Bullet; end
 class PlayerBullet < Bullet; end
 
 class Weapon
-	attr_reader :type
+	attr_reader :type, :cooldown
 	def initialize(options)
 		@type = options[:type]
 		@bullet_class = options[:bullet_class]
@@ -569,6 +570,15 @@ class Game < Chingu::GameState
 			pixel $player.x.to_i/30, $player.y.to_i/30, :color => [0,1,0]
 		end
 		@minimap.draw 800-120, 20, 1000000#, 1,1,Gosu::Color.rgba(255,255,255,128)
+		@player.modules.each_with_index do|m, i|
+			alpha = 1
+			progress = 1.0-[(m.cooldown.to_f / m.type[:cooldown]),0.0].max
+			if m.type[:cooldown] >= 30 and m.cooldown > 0
+				alpha = progress
+				$window.fill_rect [34, 10+30*i+20*(progress), 2, 20*(1-progress)], 0xffff0000, 1000000
+			end
+			Image[m.type[:icon]].draw 10, 10+30*i, 1000000, 2, 2, (0xff*alpha).to_i*0x01000000+0x00ffffff
+		end
 		if $config[:stars] then @stars.draw end
 		super
 	end
