@@ -12,6 +12,7 @@ include Gosu
 $points = 0
 $money = 0
 $tick = 0
+Image.autoload_dirs = ["data/gfx"]
 
 class Float
 	def to_radian
