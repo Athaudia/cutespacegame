@@ -270,6 +270,10 @@ class Weapon
 		@cooldown -= 1
 	end
 
+	def range
+		@type[:bullet][:speed] *(@type[:bullet][:timer]+@type[:bullet][:fade]) + (((@type[:bullet][:onexplode] or []).map{|w| Weapon.new(:type=>w).range}.max) or 0)
+	end
+
 	def rpm
 		3600.0/@type[:cooldown]
 	end
@@ -411,16 +415,17 @@ class ShopState < Chingu::GameState
           curmodprice = 0
           if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
           price_diff = curmodprice - price
-          @popup = Popup.create(:w => 200, :h => 140, :text => [
+          @popup = Popup.create(:w => 200, :h => 160, :text => [
           {:x=>10,:y=>10,:text=>$weapons[@t][:name]},
           {:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
           {:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
-          {:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
-          {:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
+					{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
+					{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
+          {:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
           if price_diff < 0
-            {:x=>190,:y=>110,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
+            {:x=>190,:y=>130,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
           else
-            {:x=>190,:y=>110,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
+            {:x=>190,:y=>130,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
           end
           ])
         elsif @t < $weapons.size + $ships.size
@@ -441,12 +446,13 @@ class ShopState < Chingu::GameState
 				if mt
 					w = Weapon.new(:type => mt)
 					price = mt[:price]
-					@popup = Popup.create(:w => 200, :h => 120, :text => [
+					@popup = Popup.create(:w => 200, :h => 140, :text => [
 					{:x=>10,:y=>10,:text=>mt[:name]},
 					{:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
 					{:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
 					{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
-					{:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
+					{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
+					{:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
 					])
 				end
 			end
