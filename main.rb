@@ -1,10 +1,10 @@
 $startuptime = Time.now
 $config = {:stars => true}
 $config = {:stars => :light}
+#$config = {:stars => false}
 
 VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
 
-#$config = {:stars => false}
 #require 'gosu'
 require 'chingu'
 require 'texplay'
@@ -77,14 +77,6 @@ class Ship < Chingu::GameObject
 		cache_bounding_circle
 	end
 
-	def upgrade(type)
-		w = (self.worth or 0)
-		$money += w
-		@modules = []
-		@type = type
-		if @health > @type[:armor] then @health = @type[:armor] end
-	end
-
 	def worth
 		@modules.map {|m| if m then m.type[:price] else 0 end}.inject {|a,b| a+b}
 	end
@@ -102,13 +94,13 @@ class Ship < Chingu::GameObject
 			@y = @previous_y
 			@velocity_y *= -0.8
 		end
-		@modules.each {|w| w.update}
+		@modules.each {|w| w.update if w}
 	end
 
-	def shoot
+	def shoot(key = 0)
 		rca = [0,0]
 		@type[:slots].each_with_index do |m,i|
-			if [:small_wep].include?(m[:type]) and @modules[i]
+			if [:small_wep].include?(m[:type]) and @modules[i] and (key == 0 or @keys[i][key-1])
 				rc = @modules[i].shoot(@x, @y, @velocity_x, @velocity_y, self.angle)
 				rca[0] += rc[0]
 				rca[1] += rc[1]
@@ -117,6 +109,10 @@ class Ship < Chingu::GameObject
 		@velocity_x += rca[0]
 		@velocity_y += rca[1]
 	end
+	def shoot1; shoot(1); end
+	def shoot2; shoot(2); end
+	def shoot3; shoot(3); end
+	def shoot4; shoot(4); end
 
 	def hit_by(bullet)
 		@health -= bullet.dmg
@@ -146,11 +142,22 @@ class Ship < Chingu::GameObject
 end
 
 class PlayerShip < Ship
+	attr_reader :keys
 	def initialize(options)
 		options[:bullet_class] = PlayerBullet
 		super options
 		$player = self
+		@keys = @type[:slots].map{[true,false,false,false]}
 #		@health = 1000
+	end
+
+	def upgrade(type)
+		w = (self.worth or 0)
+		$money += w
+		@modules = []
+		@type = type
+		if @health > @type[:armor] then @health = @type[:armor] end
+		@keys = @type[:slots].map{[true,false,false,false]}
 	end
 end
 
@@ -203,7 +210,6 @@ class Bullet < Chingu::GameObject
 
 	def hit
 		oh = (@type[:onhit] or :explode)
-		puts @type.inspect
 		case oh
 		when :explode
 			explode
@@ -231,12 +237,13 @@ class EnemyBullet < Bullet; end
 class PlayerBullet < Bullet; end
 
 class Weapon
-	attr_reader :type, :cooldown
+	attr_reader :type, :cooldown, :keys
 	def initialize(options)
 		@type = options[:type]
 		@bullet_class = options[:bullet_class]
 		@off = (options[:off] or [0,0])
 		@cooldown = 0
+		@keys = [true, false, false, false]
 	end
 
 	def shoot(x, y, rsx, rsy, rotation)
@@ -371,15 +378,22 @@ class ShopState < Chingu::GameState
 		Chingu::Text.create("Shop", :x => 10, :y => 10, :factor_x => 2, :factor_y => 2)
 		Chingu::Text.create("version: #{VERSION}", :x => 5, :y => 588-5)
 		@slot_imgs = []
+		@key_imgs = []
 		@slot_txts = []
 		@ship.type[:slots].each_with_index do |slot,i|
 			name = SLOTTYPEMAP[slot[:type]]
 			icon = SLOTTYPEICON[slot[:type]]
 			if @ship.modules[i]
-				name = @ship.modules[i].type[:name]
-				icon = @ship.modules[i].type[:icon]
+				mod = @ship.modules[i]
+				name = mod.type[:name]
+				icon = mod.type[:icon]
 			end
-			@slot_txts << Chingu::Text.create(name, :x => 40, :y => 100+30*i)
+			keys = @ship.keys[i].map{|k| {true => 255, false => 25}[k]}
+			@key_imgs << [Img.create(x: 50-5, y:108-5+30*i, img: "keyh.png", scale: 2, alpha: keys[0]),
+										Img.create(x: 50+5, y:108-5+30*i, img: "keyj.png", scale: 2, alpha: keys[1]),
+										Img.create(x: 50-5, y:108+5+30*i, img: "keyk.png", scale: 2, alpha: keys[2]),
+										Img.create(x: 50+5, y:108+5+30*i, img: "keyl.png", scale: 2, alpha: keys[3])]
+			@slot_txts << Chingu::Text.create(name, :x => 40+30, :y => 100+30*i)
 			@slot_imgs << Img.create(:x => 20, :y => 108+30*i, :img => icon, :scale => 2)
 		end
 
@@ -404,11 +418,14 @@ class ShopState < Chingu::GameState
 		elsif $window.mouse_x <= 33 and $window.mouse_y >= 108-16
 			@t = ($window.mouse_y-(108-16)).to_i/30	+ 10000
 			if @t >= @ship.type[:slots].size + 10000 then @t = nil end
+		elsif $window.mouse_x <= 63 and $window.mouse_y >= 108-16
+			@t = ($window.mouse_y-(108-16)).to_i/15*2+($window.mouse_x-(33)).to_i/15 + 10100
+			if @t >= @ship.type[:slots].size*4 + 10100 then @t = nil end
 		end
 
 		if @t != @last_t
 			@popup and @popup.destroy
-			if @t and @t < 1000
+			if @t and @t < 10000
         if @t < $weapons.size
         	w = Weapon.new(:type => $weapons[@t])
           price = $weapons[@t][:price]
@@ -429,16 +446,12 @@ class ShopState < Chingu::GameState
           end
           ])
         elsif @t < $weapons.size + $ships.size
-          puts @t
           ship = $ships[@t - $weapons.size]
-          puts ship
           @popup = Popup.create(:w => 200, :h => 140, :text =>[
           {x:10, y:10, text: ship[:name]}
           ])
-        else
-          puts @t
         end
-			elsif @t and @t >= 10000
+			elsif @t and @t < 10100
 				slot = @ship.type[:slots][@t-10000]
 				mt = @ship.modules[@t-10000]
 				if mt then mt = mt.type end
@@ -465,7 +478,8 @@ class ShopState < Chingu::GameState
 			@popup.update
 		end
 
-		if $window.button_down?(Gosu::MsLeft) and @t
+		mb = $window.button_down?(Gosu::MsLeft)
+		if mb and @t
 			if @t < 10000
         if @t < $weapons.size
           price = $weapons[@t][:price]
@@ -487,11 +501,19 @@ class ShopState < Chingu::GameState
           push_game_state ShopState.new(@ship)
         end
 			else
+				t = @t
+				if @t >= 10100
+					tt = @t-10100
+					if not @lmb then @ship.keys[tt/4][t%4] = !@ship.keys[tt/4][tt%4] end
+					@key_imgs[tt/4][t%4].alpha = {true => 255, false => 25}[@ship.keys[tt/4][tt%4]]
+					t = (@t-10100)/4+10000
+				end
 				@slot_imgs[@active_slot].alpha = 255
-				@active_slot = @t - 10000
+				@active_slot = t - 10000
 			end
 		end
 
+		@lmb = mb
 		@slot_imgs[@active_slot].alpha = (Math.sin(@tick/10.0)+1)*127
 		@tick += 1
 	end
@@ -562,7 +584,10 @@ class Game < Chingu::GameState
 			:holding_s => :decel,
 			:holding_q => :strafe_left,
 			:holding_e => :strafe_right,
-			:holding_h => :shoot,
+			:holding_h => :shoot1,
+			:holding_j => :shoot2,
+			:holding_k => :shoot3,
+			:holding_l => :shoot4,
 			[:lshift,:rshift] => :start_strafe,
 			[:released_lshift,:released_rshift] => :stop_strafe
 		}
