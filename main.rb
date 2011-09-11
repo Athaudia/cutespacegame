@@ -210,7 +210,7 @@ class Bullet < Chingu::GameObject
 	end
 
 	def explode
-		if @type[:onexplode] then Weapon.new(:type => @type[:onexplode], :bullet_class => self.class).shoot(@x, @y, 0, 0, 0.0) end
+		if @type[:onexplode] then @type[:onexplode].each{|w| Weapon.new(:type => w, :bullet_class => self.class).shoot(@x, @y, 0, 0, 0.0)} end
 		destroy
 	end
 
@@ -267,6 +267,18 @@ class Weapon
 
 	def update
 		@cooldown -= 1
+	end
+
+	def rpm
+		3600.0/@type[:cooldown]
+	end
+
+	def dmg
+		@type[:bullet][:dmg].to_f*(@type[:multi] or 1) + (((@type[:bullet][:onexplode] or []).map{|w| Weapon.new(:type=>w).dmg}.inject{|a,b|a+b}) or 0)
+	end
+
+	def dps
+		self.dmg*rpm/60
 	end
 end
 
@@ -352,7 +364,7 @@ class ShopState < Chingu::GameState
 		@active_slot = 0
 		@shipimg = Img.create(:x => 400, :y => 300, :img => ship.type[:img], :scale => 32, :alpha => 50)
 		Chingu::Text.create("Shop", :x => 10, :y => 10, :factor_x => 2, :factor_y => 2)
-		Chingu::Text.create("version: #{VERSION}", :x => 0, :y => 588)
+		Chingu::Text.create("version: #{VERSION}", :x => 5, :y => 588-5)
 		@slot_imgs = []
 		@slot_txts = []
 		@ship.type[:slots].each_with_index do |slot,i|
@@ -393,18 +405,16 @@ class ShopState < Chingu::GameState
 			@popup and @popup.destroy
 			if @t and @t < 1000
         if @t < $weapons.size
-          dmg = $weapons[@t][:bullet][:dmg].to_f
-          rpm = 3600.0/$weapons[@t][:cooldown]
-          dps = dmg*rpm/60*($weapons[@t][:multi] or 1)
+        	w = Weapon.new(:type => $weapons[@t])
           price = $weapons[@t][:price]
           curmodprice = 0
           if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
           price_diff = curmodprice - price
           @popup = Popup.create(:w => 200, :h => 140, :text => [
           {:x=>10,:y=>10,:text=>$weapons[@t][:name]},
-          {:x=>10,:y=>30,:text=>"Dmg: " + dmg.to_s},
-          {:x=>10,:y=>50,:text=>"RPM: " + rpm.to_s},
-          {:x=>10,:y=>70,:text=>"Dps: " + dps.to_s},
+          {:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
+          {:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
+          {:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
           {:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
           if price_diff < 0
             {:x=>190,:y=>110,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
@@ -428,15 +438,13 @@ class ShopState < Chingu::GameState
 				if mt then mt = mt.type end
 #        if mt and mt[:type] != slot[:type] then mt = nil end
 				if mt
-					dmg = mt[:bullet][:dmg].to_f
-					rpm = 3600.0/mt[:cooldown]
-					dps = dmg*rpm/60*(mt[:multi] or 1)
+					w = Weapon.new(:type => mt)
 					price = mt[:price]
 					@popup = Popup.create(:w => 200, :h => 120, :text => [
 					{:x=>10,:y=>10,:text=>mt[:name]},
-					{:x=>10,:y=>30,:text=>"Dmg: " + dmg.to_s},
-					{:x=>10,:y=>50,:text=>"RPM: " + rpm.to_s},
-					{:x=>10,:y=>70,:text=>"Dps: " + dps.to_s},
+					{:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
+					{:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
+					{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
 					{:x=>190,:y=>90,:text=>"$" + price.to_s, :align=>:right},
 					])
 				end
@@ -646,7 +654,7 @@ $bullets << {timer: 40, fade: 10, speed: 5.0,  dmg: 10,  img: "bullet001.png"}
 $bullets << {timer: 20, fade: 10, speed: 5.0,  dmg: 2,   img: "bullet001.png"}
 $bullets << {timer: 40, fade: 10, speed: 10.0, dmg: 200, img: "bullet002.png"}
 $bullets << {timer: 15, fade: 1,  speed: 10.0,  dmg: 0,   img: "bullet003.png", onhit: :nothing, onexplode:
-	{bullet: $bullets[0], multi: 128, spread_mode: :angle, multi_spread: 360/128.0}}
+	[{bullet: $bullets[0], multi: 128, spread_mode: :angle, multi_spread: 360/128.0}]}
 $weapons = []
 $weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon001.png", name: "Pink Pellet",        price: 100}
 $weapons << {bullet: $bullets[0], cooldown: 5,   icon: "icon002.png", name: "P.P. Turbo",         price: 500}
