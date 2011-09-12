@@ -143,7 +143,7 @@ class Ship < Chingu::GameObject
 				pause
 				destroy
 				$points += worth
-				$money += worth
+				$money += worth/2
 			end
 		end
 	end
@@ -559,7 +559,7 @@ class ShopState < Chingu::GameState
           curmodprice = 0
           if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
           price_diff = curmodprice - price
-          if $money > price_diff and type == @ship.type[:slots][@active_slot][:type]
+          if $money >= -price_diff and type == @ship.type[:slots][@active_slot][:type]
           	if @t < $weapons.size
 							@ship.modules[@active_slot] = Weapon.new({:type=>$weapons[@t], :bullet_class=>PlayerBullet, :off => @ship.type[:slots][@active_slot][:off], :ship => @ship})
 							icon = $weapons[@t][:icon]
@@ -738,7 +738,7 @@ class Game < Chingu::GameState
 		end
 
 		if @enemies.size == 0
-			if @timer <= 0
+			if @timer <= 0 and $waves[@wave]
 				@enemies = $waves[@wave].map{|s| AiShip.create(:x => rand(3000), :y => rand(3000), :type => $ships[s[0]], :mods => s[1,s.size-1])}
 				@wave += 1
 			else
@@ -820,8 +820,8 @@ $weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon009.png", name: "P.P
 $weapons << {bullet: $bullets[1], cooldown: 2,   icon: "icon010.png", name: "P.P. Star",          price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => 3}
 $weapons << {bullet: $bullets[1], cooldown: 2,   icon: "icon010.png", name: "P.P. Star CCW",      price: 4000,  multi: 8, spread_mode: :angle, multi_spread: 360/8, :rot_speed => -3}
 $weapons << {bullet: $bullets[2], cooldown: 60,  icon: "icon012.png", name: "Pink Bolt",          price: 10000, recoil: 2}
-$weapons << {bullet: $bullets[2], cooldown: 90,  icon: "icon013.png", name: "P.B. Extreme",       price: 10000, multi: 2, multi_spread: 8, recoil: 3}
-$weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon011.png", name: "Red Bomb",           price: 10000, recoil: 2}
+$weapons << {bullet: $bullets[2], cooldown: 90,  icon: "icon013.png", name: "P.B. Extreme",       price: 15000, multi: 2, multi_spread: 8, recoil: 3}
+$weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon011.png", name: "Red Bomb",           price: 20000, recoil: 2}
 
 $utils = []
 $utils << {cooldown: 100,  icon: "icon201.png", name: "Repairer",        price: 100,   passive: true, repair: 5}
@@ -832,7 +832,16 @@ $waves = [
 [[0,0],[0,0]],
 [[0,0],[0,0]],
 [[1,0,0]],
-[[1,0,0],[1,0,0]]
+[[1,0,0],[1,0,0]],
+[[1,2,2]],
+[[1,2,2],[1,2,2]],
+[[0,6,0],[0,6,0]],
+[[0,6,0],[0,6,0],[0,6,0],[0,6,0]],
+[[0,8,0],[0,8,0]],
+[[0,8,0],[0,8,0],[0,8,0],[0,8,0]],
+[[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0]],
+[[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0],[0,8,0]],
+[[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,8,8],[1,9,10],[1,9,10]],
 ]
 
 #$money = 1000000
