@@ -3,7 +3,6 @@ $config = {:stars => :cached}
 #$config = {:stars => :light, :godmode => true}
 #$config = {:stars => false}
 
-VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
 
 #require 'gosu'
 require 'chingu'
@@ -855,4 +854,5 @@ $waves = [
 
 #$money = 1000000
 Dir.chdir File.dirname($0)
+VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
 Main.new.show
