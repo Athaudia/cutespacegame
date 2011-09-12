@@ -153,7 +153,7 @@ class PlayerShip < Ship
 		super options
 		$player = self
 		@keys = @type[:slots].map{[true,false,false,false]}
-#		@health = 1000
+		@crosshair = Chingu::GameObject.create(:image => "crosshair.png", :scale => 2, :zorder => 9000)
 	end
 
 	def upgrade(type)
@@ -163,6 +163,13 @@ class PlayerShip < Ship
 		@type = type
 		if @health > @type[:armor] then @health = @type[:armor] end
 		@keys = @type[:slots].map{[true,false,false,false]}
+	end
+
+	def update
+		super
+		@crosshair.x = @x + Math.sin(self.angle.to_radian) * 50
+		@crosshair.y = @y - Math.cos(self.angle.to_radian) * 50
+		@crosshair.angle = @angle
 	end
 end
 
