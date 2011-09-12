@@ -1,6 +1,6 @@
 $startuptime = Time.now
-$config = {:stars => true}
-$config = {:stars => :light, :godmode => true}
+$config = {:stars => :cached}
+#$config = {:stars => :light, :godmode => true}
 #$config = {:stars => false}
 
 VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
@@ -615,7 +615,9 @@ class Game < Chingu::GameState
 	trait :viewport
 	def initialize
 		super
-		if $config[:stars]
+		@minimap = TexPlay.create_blank_image($window, 100, 100)
+		@minimap.each{|c| c[3] = 1}
+		if $config[:stars] and $config[:stars] != :cached
 			$starfield = []
 			(if $config[:stars] == :light then 1 else 4 end).times do
 				sl = []
@@ -629,24 +631,26 @@ class Game < Chingu::GameState
 				if $config[:stars] != :light
 					sf = []
 					3.times {sf << sl[0].dup}
-					sf.each{|s|s.each{|c| c[0] = c[1] = c[2] = rand(0.2)+0.7}}
+					sf.each{|s|s.each{|c| c[0] = c[1] = c[2] = rand(0.2)+0.7 unless c[3] == 0}}
 					sl += sf
 				end
 				$starfield << sl
 			end
 
-			@star_animspeed = 10
-			@star_tick = 0
-			@star_cur = 0
 
-			@stars = Chingu::Parallax.new(:x => 0, :y => 0)
-			@stars << {:image => $starfield[0][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left}
-			if $config[:stars] != :light
-				@stars << {:image => $starfield[1][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 2}
-				@stars << {:image => $starfield[2][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 3}
-				@stars << {:image => $starfield[3][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 5}
-			end
+			4.times{|i| 4.times{|j| $starfield[i][j].save("c:\\star0#{i}#{j}.png")}}
+		else
+			$starfield = []
+			4.times{|i| $starfield[i] = []; 4.times{|j| $starfield[i][j] = Image["star0#{i}#{j}.png"]}}
 		end
+		@stars = Chingu::Parallax.new(:x => 0, :y => 0)
+		@stars << {:image => $starfield[0][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left}
+		if $config[:stars] != :light
+			@stars << {:image => $starfield[1][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 2}
+			@stars << {:image => $starfield[2][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 3}
+			@stars << {:image => $starfield[3][0], :repeat_x => true, :repeat_y => true, :rotation_center => :top_left, :damping => 5}
+		end
+
 		Shop.create(:x => 100,  :y => 100)
 		Shop.create(:x => 100,  :y => 2899)
 		Shop.create(:x => 2899, :y => 100)
@@ -679,8 +683,6 @@ class Game < Chingu::GameState
 		}
 		@enemies = []
 #		1000.times {@enemies << AiShip.create(:x => rand(3000), :y => rand(3000))}
-		@minimap = TexPlay.create_blank_image($window, 100, 100)
-		@minimap.each{|c| c[3] = 1}
 		#self.viewport.lag = 0.99
 		self.viewport.game_area = [0,0,3000,3000]
 		puts "Took #{Time.now-$startuptime}s to start up"
@@ -688,18 +690,24 @@ class Game < Chingu::GameState
 		@timer = 100
 	end
 
+	def setup
+		@star_animspeed = 10
+		@star_tick = 0
+		@star_cur = 0
+	end
+
 	def draw
 		fill_rect [0,0,800,600], 0xff000030, -2
-		@minimap.paint do
-			rect 0,0,99,99, :fill => true, :color => [0,0,0]
+		begin
+			@minimap.rect 0,0,99,99, :fill => true, :color => [0,0,0]
 			@enemies.each do |e|
 				if e.paused?
 					@enemies.delete e
 				else
-					pixel (e.x/30).to_i, (e.y/30).to_i, :color => [1,0,0]
+					@minimap.pixel (e.x/30).to_i, (e.y/30).to_i, :color => [1,0,0]
 				end
 			end
-			pixel $player.x.to_i/30, $player.y.to_i/30, :color => [0,1,0]
+			@minimap.pixel $player.x.to_i/30, $player.y.to_i/30, :color => [0,1,0]
 		end
 		@minimap.draw 800-120, 20, 1000000#, 1,1,Gosu::Color.rgba(255,255,255,128)
 		@player.modules.each_with_index do|m, i|
