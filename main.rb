@@ -654,7 +654,7 @@ class Game < Chingu::GameState
 		Shop.create(:x => 100,  :y => 2899)
 		Shop.create(:x => 2899, :y => 100)
 		Shop.create(:x => 2899, :y => 2899)
-		@player = PlayerShip.create(:x => 100, :y => 100, :type => $ships[0], :mods => [0])
+		@player = PlayerShip.create(:x => 1500, :y => 1500, :type => $ships[0], :mods => [0])
 		@player.input = {
 			:holding_h => :turn_left,
 			:holding_k => :turn_right,
