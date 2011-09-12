@@ -1,6 +1,6 @@
 $startuptime = Time.now
 $config = {:stars => true}
-$config = {:stars => :light}
+$config = {:stars => :light, :godmode => true}
 #$config = {:stars => false}
 
 VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
@@ -76,7 +76,7 @@ class Ship < Chingu::GameObject
 			if mods[i]
 				case s[:type]
 				when :small_wep
-					Weapon.new(:bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self, :type => $weapons[mods[i]])
+					Weapon.new(:bullet_class => options[:bullet_class], :off => s[:off], :ship => self, :type => $weapons[mods[i]])
 				when :util
 					Util.new(:ship => self, :type => $utils[mods[i]])
 				end
@@ -137,10 +137,14 @@ class Ship < Chingu::GameObject
 		@health -= bullet.dmg
 		if @health <= 0
 			Explosion.create(:x => @x, :y => @y)
-			pause
-			destroy
-			$points += 100
-			$money += 100
+			if $config[:godmode] and self.class == PlayerShip
+				@health = @type[:armor]
+			else
+				pause
+				destroy
+				$points += worth
+				$money += worth
+			end
 		end
 	end
 
@@ -195,7 +199,7 @@ class AiShip < Ship
 		cache_bounding_circle
 		@ai = :simple
 		@range = @modules.map{|m| if m.class == Weapon then m.range else 0 end}.max
-		@optimal = @modules.map{|m| if m.class == Weapon then m.range else 0 end}.min
+		@optimal = @modules.map{|m| if m.class == Weapon then m.optimal_range else 0 end}.min
 	end
 
 	def update
@@ -798,7 +802,7 @@ $ships << {img: "ship001.png", armor: 100, name: "Amy",   slots: [{type: :small_
 $ships << {img: "ship002.png", armor: 100, name: "Allie", slots: [{type: :small_wep, off: [-6,0]},{type: :small_wep, off: [6,0]}]}
 $bullets = []
 $bullets << {timer: 40, fade: 10, speed: 5.0,  dmg: 10,  img: "bullet001.png"}
-$bullets << {timer: 20, fade: 10, speed: 5.0,  dmg: 2,   img: "bullet001.png"}
+$bullets << {timer: 10, fade: 30, speed: 5.0,  dmg: 2,   img: "bullet001.png"}
 $bullets << {timer: 40, fade: 10, speed: 10.0, dmg: 200, img: "bullet002.png"}
 $bullets << {timer: 15, fade: 1,  speed: 10.0,  dmg: 0,   img: "bullet003.png", onhit: :nothing, onexplode:
 	[{bullet: $bullets[0], multi: 128, spread_mode: :angle, multi_spread: 360/128.0}]}
@@ -820,11 +824,16 @@ $weapons << {bullet: $bullets[2], cooldown: 90,  icon: "icon013.png", name: "P.B
 $weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon011.png", name: "Red Bomb",           price: 10000, recoil: 2}
 
 $utils = []
-$utils << {cooldown: 10,  icon: "icon201.png", name: "Repairer",        price: 100,   passive: true, repair: 1}
+$utils << {cooldown: 100,  icon: "icon201.png", name: "Repairer",        price: 100,   passive: true, repair: 5}
 
-$waves = []
-4.times {$waves << [[0,0]]}
-5.times {$waves << [[0,0],[0,0]]}
+$waves = [
+[[0,0]],
+[[0,0]],
+[[0,0],[0,0]],
+[[0,0],[0,0]],
+[[1,0,0]],
+[[1,0,0],[1,0,0]]
+]
 
 #$money = 1000000
 Dir.chdir File.dirname($0)
