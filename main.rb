@@ -177,26 +177,22 @@ class AiShip < Ship
 	def initialize(options)
 		options[:bullet_class] = EnemyBullet
 		super options
+		#@modules = [Weapon.new(:type => $weapons[1], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self)]
 		cache_bounding_circle
 		@ai = :simple
+		@range = @modules.map{|m| if m.class == Weapon then m.range else 0 end}.max
+		@optimal = @modules.map{|m| if m.class == Weapon then m.range else 0 end}.min
 	end
 
 	def update
 		a = Math.atan2(@x-$player.x,-@y+$player.y)*180/Math::PI+180
 		if a < self.angle then turn_left end
 		if a > self.angle then turn_right end
-		r = rand
-		if r < 0.1
-			strafe_left
-		elsif r < 0.2
-			strafe_right
-		elsif r < 0.3
-			decel
-		elsif r < 0.5
-			accel
-		elsif r > 0.99
-			shoot
-		end
+		xd = @x - $player.x
+		yd = @y - $player.y
+		dist = Math.sqrt(xd*xd + yd*yd)
+		if dist < @optimal then decel else accel end
+		if dist <= @range then shoot end
 		super
 	end
 end
@@ -320,6 +316,10 @@ class Weapon < Mod
 
 	def range
 		@type[:bullet][:speed] *(@type[:bullet][:timer]+@type[:bullet][:fade]) + (((@type[:bullet][:onexplode] or []).map{|w| Weapon.new(:type=>w).range}.max) or 0)
+	end
+
+	def optimal_range
+		@type[:bullet][:speed] *(@type[:bullet][:timer])
 	end
 
 	def rpm
@@ -720,10 +720,10 @@ class Game < Chingu::GameState
 		end
 
 		@spawntime -= 1
-		if @spawntime < 0
+		if @spawntime < 0 and @enemies.size == 0
 			@enemies << AiShip.create(:x => rand(3000), :y => rand(3000), :type => $ships[0])
 			@spawntime = @spawntimer
-			@spawntimer *= 0.95
+			#@spawntimer *= 0.95
 		end
 
 		PlayerBullet.each_collision(AiShip) do |bullet, enemy|
@@ -789,6 +789,7 @@ $bullets << {timer: 15, fade: 1,  speed: 10.0,  dmg: 0,   img: "bullet003.png", 
 
 $weapons = []
 $weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon001.png", name: "Pink Pellet",        price: 100}
+$weapons << {bullet: $bullets[0], cooldown: 30,  icon: "icon001.png", name: "P.P. Baby",          price: 10}
 $weapons << {bullet: $bullets[0], cooldown: 5,   icon: "icon002.png", name: "P.P. Turbo",         price: 500}
 $weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon003.png", name: "P.P. Duo",           price: 500,   multi: 2}
 $weapons << {bullet: $bullets[0], cooldown: 10,  icon: "icon007.png", name: "P.P. Duo Spread",    price: 500,   multi: 2, spread_mode: :angle, multi_spread: 10}
