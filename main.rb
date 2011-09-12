@@ -822,6 +822,7 @@ $weapons << {bullet: $bullets[1], cooldown: 2,   icon: "icon010.png", name: "P.P
 $weapons << {bullet: $bullets[2], cooldown: 60,  icon: "icon012.png", name: "Pink Bolt",          price: 10000, recoil: 2}
 $weapons << {bullet: $bullets[2], cooldown: 90,  icon: "icon013.png", name: "P.B. Extreme",       price: 15000, multi: 2, multi_spread: 8, recoil: 3}
 $weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon011.png", name: "Red Bomb",           price: 20000, recoil: 2}
+$weapons << {bullet: $bullets[3], cooldown: 400, icon: "icon011.png", name: "R.B. Turbo",         price: 40000, recoil: 2}
 
 $utils = []
 $utils << {cooldown: 100,  icon: "icon201.png", name: "Repairer",        price: 100,   passive: true, repair: 5}
