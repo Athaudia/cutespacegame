@@ -71,7 +71,21 @@ class Ship < Chingu::GameObject
 		@baccel = 0.05
 		@rspeed = 1
 		@saccel = 0.05
-		@modules = [Weapon.new(:type => $weapons[0], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self)]
+		mods = (options[:mods] or [])
+		@modules = @type[:slots].map.each_with_index do |s,i|
+			if mods[i]
+				case s[:type]
+				when :small_wep
+					Weapon.new(:bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self, :type => $weapons[mods[i]])
+				when :util
+					Util.new(:ship => self, :type => $utils[mods[i]])
+				end
+			else
+				nil
+			end
+		end
+		puts @modules.inspect
+#		@modules = [Weapon.new(:type => $weapons[0], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self)]
 		@health = @type[:armor]
 		self.angle = 0.0
 		cache_bounding_circle
@@ -633,7 +647,7 @@ class Game < Chingu::GameState
 		Shop.create(:x => 100,  :y => 2899)
 		Shop.create(:x => 2899, :y => 100)
 		Shop.create(:x => 2899, :y => 2899)
-		@player = PlayerShip.create(:x => 100, :y => 100, :type => $ships[0])
+		@player = PlayerShip.create(:x => 100, :y => 100, :type => $ships[0], :mods => [0])
 		@player.input = {
 			:holding_h => :turn_left,
 			:holding_k => :turn_right,
@@ -666,8 +680,8 @@ class Game < Chingu::GameState
 		#self.viewport.lag = 0.99
 		self.viewport.game_area = [0,0,3000,3000]
 		puts "Took #{Time.now-$startuptime}s to start up"
-		@spawntimer = 800
-		@spawntime = 1
+		@wave = 0
+		@timer = 100
 	end
 
 	def draw
@@ -719,11 +733,13 @@ class Game < Chingu::GameState
 			end
 		end
 
-		@spawntime -= 1
-		if @spawntime < 0 and @enemies.size == 0
-			@enemies << AiShip.create(:x => rand(3000), :y => rand(3000), :type => $ships[0])
-			@spawntime = @spawntimer
-			#@spawntimer *= 0.95
+		if @enemies.size == 0
+			if @timer <= 0
+				@enemies = $waves[@wave].map{|s| AiShip.create(:x => rand(3000), :y => rand(3000), :type => $ships[s[0]], :mods => s[1,s.size-1])}
+				@wave += 1
+			else
+				@timer -= 1
+			end
 		end
 
 		PlayerBullet.each_collision(AiShip) do |bullet, enemy|
@@ -806,6 +822,10 @@ $weapons << {bullet: $bullets[3], cooldown: 600, icon: "icon011.png", name: "Red
 $utils = []
 $utils << {cooldown: 10,  icon: "icon201.png", name: "Repairer",        price: 100,   passive: true, repair: 1}
 
-$money = 1000000
+$waves = []
+4.times {$waves << [[0,0]]}
+5.times {$waves << [[0,0],[0,0]]}
+
+#$money = 1000000
 Dir.chdir File.dirname($0)
 Main.new.show
