@@ -199,7 +199,7 @@ class AiShip < Ship
 		cache_bounding_circle
 		@ai = :simple
 		@range = @modules.map{|m| if m.class == Weapon then m.range else 0 end}.max
-		@optimal = @modules.map{|m| if m.class == Weapon then m.optimal_range else 0 end}.min
+		@optimal = @modules.map{|m| if m.class == Weapon then m.optimal_range else 999999 end}.min
 	end
 
 	def update
