@@ -96,7 +96,7 @@ class Ship < Chingu::GameObject
 	end
 
 	def worth
-		@modules.map {|m| if m then m.type[:price] else 0 end}.inject {|a,b| a+b}
+		@modules.map {|m| if m then m.type[:price] else 0 end}.inject(:+)
 	end
 
 	def update
@@ -344,7 +344,7 @@ class Weapon < Mod
 	end
 
 	def dmg
-		@type[:bullet][:dmg].to_f*(@type[:multi] or 1) + (((@type[:bullet][:onexplode] or []).map{|w| Weapon.new(:type=>w).dmg}.inject{|a,b|a+b}) or 0)
+		@type[:bullet][:dmg].to_f*(@type[:multi] or 1) + (((@type[:bullet][:onexplode] or []).map{|w| Weapon.new(:type=>w).dmg}.inject(:+)) or 0)
 	end
 
 	def dps
