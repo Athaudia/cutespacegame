@@ -1,5 +1,5 @@
 $startuptime = Time.now
-$config = {:stars => :cached}
+$config = {:stars => :cached, :control => :mouse}
 #$config = {:stars => :light, :godmode => true}
 #$config = {:stars => false}
 
@@ -184,8 +184,21 @@ class PlayerShip < Ship
 
 	def update
 		super
-		@crosshair.x = @x + Math.sin(self.angle.to_radian) * 50
-		@crosshair.y = @y - Math.cos(self.angle.to_radian) * 50
+		$game.viewport.center_around self
+		if $config[:control] == :mouse
+			@crosshair.x = $window.mouse_x + $game.viewport.x
+			@crosshair.y = $window.mouse_y + $game.viewport.y
+			a = Math.atan2(-@crosshair.x+@x,@crosshair.y-@y)*180.to_f/Math::PI+180
+			diff = a - self.angle;
+			diff += 360 while diff < -180
+			diff -= 360 while diff > 180
+			if diff < 0 then turn_left end
+			if diff > 0 then turn_right end
+			if $window.button_down?(Gosu::MsLeft) then shoot1 end
+		else
+			@crosshair.x = @x + Math.sin(self.angle.to_radian) * 50
+			@crosshair.y = @y - Math.cos(self.angle.to_radian) * 50
+		end
 		@crosshair.angle = @angle
 	end
 end
@@ -202,9 +215,13 @@ class AiShip < Ship
 	end
 
 	def update
-		a = Math.atan2(@x-$player.x,-@y+$player.y)*180/Math::PI+180
-		if a < self.angle then turn_left end
-		if a > self.angle then turn_right end
+		a = Math.atan2(-$player.x+@x,$player.y-@y)*180.to_f/Math::PI+180
+		diff = a - self.angle;
+		diff += 360 while diff < -180
+		diff -= 360 while diff > 180
+		if diff < 0 then turn_left end
+		if diff > 0 then turn_right end
+
 		xd = @x - $player.x
 		yd = @y - $player.y
 		dist = Math.sqrt(xd*xd + yd*yd)
@@ -612,7 +629,9 @@ end
 
 class Game < Chingu::GameState
 	trait :viewport
+	attr_reader :viewport
 	def initialize
+		$game = self
 		super
 		@minimap = TexPlay.create_blank_image($window, 100, 100)
 		@minimap.each{|c| c[3] = 1}
@@ -656,19 +675,8 @@ class Game < Chingu::GameState
 		Shop.create(:x => 2899, :y => 2899)
 		@player = PlayerShip.create(:x => 1500, :y => 1500, :type => $ships[0], :mods => [0])
 		@player.input = {
-			:holding_h => :turn_left,
-			:holding_k => :turn_right,
-			:holding_u => :accel,
-			:holding_j => :decel,
-			:holding_y => :strafe_left,
-			:holding_i => :strafe_right,
-			:holding_f => :shoot,
-			:lshift => :start_strafe,
-			:released_lshift => :stop_strafe
-		}
-		@player.input = {
-			:holding_a => :turn_left,
-			:holding_d => :turn_right,
+			:holding_a => if $config[:control] == :mouse then :strafe_left else :turn_left end,
+			:holding_d => if $config[:control] == :mouse then :strafe_right else :turn_right end,
 			:holding_w => :accel,
 			:holding_s => :decel,
 			:holding_q => :strafe_left,
