@@ -134,6 +134,7 @@ class Ship < Chingu::GameObject
 	def shoot4; shoot(4); end
 
 	def hit_by(bullet)
+		if @health <= 0 then return end
 		@health -= bullet.dmg
 		if @health <= 0
 			Explosion.create(:x => @x, :y => @y)
@@ -211,8 +212,13 @@ class PlayerShip < Ship
 #			puts @ghost.x
 			40.times{@ghost.update}
 #			puts @ghost.x
- 			@future_x = @ghost.x
-			@future_y = @ghost.y
+			if (@velocity_x.abs+@velocity_y.abs) > 1
+	 			@future_x = @ghost.x
+				@future_y = @ghost.y
+			else
+				@future_x = @x
+				@future_y = @y
+			end
 			@crosshair.angle = @angle
 		end
 	end
@@ -836,12 +842,12 @@ class Game < Chingu::GameState
 			bullet.hit
 		end
 
-		EnemyBullet.each_collision(PlayerShip) do |bullet, player|
+		EnemyBullet.each_collision($player) do |bullet, player|
 			player.hit_by bullet
 			bullet.hit
 		end
 
-		Shop.each_collision(PlayerShip) do |shop, player|
+		Shop.each_collision($player) do |shop, player|
 			if shop.alpha == 255
 				shop.alpha = 0
 				push_game_state ShopState.new(player)
