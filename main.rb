@@ -60,6 +60,7 @@ end
 class Ship < Chingu::GameObject
 	traits :velocity, :collision_detection, :bounding_circle
 	attr_reader :type, :modules
+	attr_accessor :rs
 	def initialize(options)
 		super
 		@type = options[:type]
@@ -83,7 +84,7 @@ class Ship < Chingu::GameObject
 				nil
 			end
 		end
-		puts @modules.inspect
+#		puts @modules.inspect
 #		@modules = [Weapon.new(:type => $weapons[0], :bullet_class => options[:bullet_class], :off => @type[:slots][0][:off], :ship => self)]
 		@health = @type[:armor]
 		self.angle = 0.0
@@ -164,13 +165,14 @@ class Ship < Chingu::GameObject
 end
 
 class PlayerShip < Ship
-	attr_reader :keys
+	attr_reader :keys, :future_x, :future_y, :crosshair
 	def initialize(options)
 		options[:bullet_class] = PlayerBullet
 		super options
-		$player = self
-		@keys = @type[:slots].map{[true,false,false,false]}
-		@crosshair = Chingu::GameObject.create(:image => "crosshair.png", :scale => 2, :zorder => 9000)
+		$player = self unless options[:ghost]
+		@keys = @type[:slots].map{[true,false,false,false]} unless options[:ghost]
+		@crosshair = Chingu::GameObject.create(:image => "crosshair.png", :scale => 2, :zorder => 9000) unless options[:ghost]
+		@ghost = PlayerShip.new(ghost: true, type: @type) unless options[:ghost]
 	end
 
 	def upgrade(type)
@@ -183,23 +185,41 @@ class PlayerShip < Ship
 	end
 
 	def update
+		if self != $player
+#			puts 123
+			self.update_trait
+		end
 		super
-		$game.viewport.center_around self
+		$game.viewport.center_around self if self == $player
 		if $config[:control] == :mouse
-			@crosshair.x = $window.mouse_x + $game.viewport.x
-			@crosshair.y = $window.mouse_y + $game.viewport.y
-			a = Math.atan2(-@crosshair.x+@x,@crosshair.y-@y)*180.to_f/Math::PI+180
+			@crosshair.x = $window.mouse_x + $game.viewport.x if self == $player
+			@crosshair.y = $window.mouse_y + $game.viewport.y if self == $player
+			a = Math.atan2(-$player.crosshair.x+@x,$player.crosshair.y-@y)*180.to_f/Math::PI+180
 			diff = a - self.angle;
 			diff += 360 while diff < -180
 			diff -= 360 while diff > 180
 			if diff < 0 then turn_left end
 			if diff > 0 then turn_right end
-			if $window.button_down?(Gosu::MsLeft) then shoot1 end
+			if $window.button_down?(Gosu::MsLeft) and self == $player then shoot1 end
 		else
-			@crosshair.x = @x + Math.sin(self.angle.to_radian) * 50
-			@crosshair.y = @y - Math.cos(self.angle.to_radian) * 50
+			@crosshair.x = @x + Math.sin(self.angle.to_radian) * 50 if self == $player
+			@crosshair.y = @y - Math.cos(self.angle.to_radian) * 50 if self == $player
 		end
-		@crosshair.angle = @angle
+		if self == $player
+			@ghost.x, @ghost.y, @ghost.angle, @ghost.rs = @x, @y, @angle, @rs
+			@ghost.velocity_x, @ghost.velocity_y = @velocity_x, @velocity_y
+#			puts @ghost.x
+			40.times{@ghost.update}
+#			puts @ghost.x
+ 			@future_x = @ghost.x
+			@future_y = @ghost.y
+			@crosshair.angle = @angle
+		end
+	end
+
+	def draw
+		super
+#		$window.fill_rect [@future_x-2, @future_y-2, 4, 4], 0xffffffff, 10000000 if @future_x
 	end
 end
 
@@ -215,15 +235,15 @@ class AiShip < Ship
 	end
 
 	def update
-		a = Math.atan2(-$player.x+@x,$player.y-@y)*180.to_f/Math::PI+180
+		a = Math.atan2(-$player.future_x+@x,$player.future_y-@y)*180.to_f/Math::PI+180
 		diff = a - self.angle;
 		diff += 360 while diff < -180
 		diff -= 360 while diff > 180
 		if diff < 0 then turn_left end
 		if diff > 0 then turn_right end
 
-		xd = @x - $player.x
-		yd = @y - $player.y
+		xd = @x - $player.future_x
+		yd = @y - $player.future_y
 		dist = Math.sqrt(xd*xd + yd*yd)
 		if dist < @optimal then decel else accel end
 		if dist <= @range then shoot end
@@ -784,7 +804,7 @@ class Game < Chingu::GameState
 
 	def update
 		super
-		if not @notfirst then push_game_state Hiscore; @notfirst = true; end
+#		if not @notfirst then push_game_state Hiscore; @notfirst = true; end
 
 		self.viewport.center_around @player
 
