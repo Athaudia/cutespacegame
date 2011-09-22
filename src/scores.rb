@@ -1,10 +1,13 @@
 require 'socket'
 require 'json'
-#require 'eventmachine'
 
 module Scores
 	def self.get
-		send_cmd(cmd: :get_top10, game: :csg_0_3)['scores']
+		begin
+			send_cmd(cmd: :get_top10, game: :csg_0_3)['scores']
+		rescue
+			[]
+		end
 	end
 
 	def self.send_cmd cmd
@@ -21,4 +24,4 @@ module Scores
 	end
 end
 
-puts Scores::get.inspect
+#puts Scores::get.inspect
