@@ -1,4 +1,4 @@
-class Chingu::Text; def center; @x = (800-@gosu_font.text_width(@text, self.scale))/2; self; end; end
+class Chingu::Text; def center; @x = (800-@gosu_font.text_width(@text, self.factor_x))/2; self; end; end
 class TI < Gosu::TextInput; def filter(text_in); if self.text.size < 16 then text_in else '' end; end; end;
 class HiscoreState < Chingu::GameState
 	def initialize
@@ -8,7 +8,7 @@ class HiscoreState < Chingu::GameState
 		@text = Chingu::Text.create("", :x => 300, :y => 520, :scale => 2)
 		Chingu::Text.create("Game Over", :y =>30, :scale => 4).center
 		Chingu::Text.create("#{$points} Points", :y =>100, :scale => 2).center
-		Chingu::Text.create("            Enter name and press enter to send score to server, or esc to skip", :y =>580, :scale => 1).center
+		Chingu::Text.create("Enter name and press enter to send score to server, or esc to skip", :y =>580, :scale => 1).center
 		@iw = @text.gosu_font.text_width("WWWWWWWWWWWWWWWW",2)
 		@ih = @text.gosu_font.height * 2
 		@text.x = (800-@iw)/2
