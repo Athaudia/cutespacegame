@@ -44,7 +44,7 @@ class ShopState < Chingu::GameState
 			Img.create :x => 300+30*((i+$weapons.size+$utils.size)%16), :y => 108+30*((i+$weapons.size+$utils.size)/16), :img => ship[:img], :scale => 2
 		end
 
-		self.input = {:esc => :pop_game_state}
+		self.input = {:esc => :pop_game_state, :space => :pop_game_state, :return => :pop_game_state}
 	end
 
 	def update

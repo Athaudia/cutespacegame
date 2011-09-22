@@ -66,7 +66,7 @@ class Game < Chingu::GameState
 #		1000.times {@enemies << AiShip.create(:x => rand(3000), :y => rand(3000))}
 		#self.viewport.lag = 0.99
 		self.viewport.game_area = [0,0,3000,3000]
-		puts "Took #{Time.now-$startuptime}s to start up"
+#		puts "Took #{Time.now-$startuptime}s to start up"
 		@wave = 0
 		@timer = 100
 	end
