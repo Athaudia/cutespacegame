@@ -126,7 +126,13 @@ class Game < Chingu::GameState
 
 		if @enemies.size == 0
 			if @timer <= 0 and $waves[@wave]
-				@enemies = $waves[@wave].map{|s| AiShip.create(:x => rand(3000), :y => rand(3000), :type => $ships[s[0]], :mods => s[1,s.size-1])}
+				@enemies = $waves[@wave].map do |s|
+					begin
+						x = rand(3000)
+						y = rand(3000)
+					end until ($player.x-x).abs+($player.y-y).abs > 1000
+					AiShip.create(x: x, y: y, :type => $ships[s[0]], :mods => s[1,s.size-1])
+				end
 				@wave += 1
 			else
 				@timer -= 1
