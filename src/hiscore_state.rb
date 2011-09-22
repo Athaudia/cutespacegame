@@ -13,9 +13,10 @@ class HiscoreState < Chingu::GameState
 		@ih = @text.gosu_font.height * 2
 		@text.x = (800-@iw)/2
 
-		hiscores = [{name: 'Athaudia', score: 15100}]*10
+#		hiscores = [{name: 'Athaudia', score: 15100}]*10
+		hiscores = Scores::get
 		hiscores.each_with_index do |h,i|
-			Chingu::Text.create("#{(i+1)}. #{h[:name]} - #{h[:score]}", :x => 10, :y => 170+i*30, :scale => 2).center
+			Chingu::Text.create("#{(i+1)}. #{h['name']} - #{h['score']}", :x => 10, :y => 170+i*30, :scale => 2).center
 		end
 	end
 
