@@ -32,9 +32,9 @@ class ShopState < Chingu::GameState
 			@slot_imgs << Img.create(:x => 20, :y => 108+30*i, :img => icon, :scale => 2)
 		end
 
-    $weapons.each_with_index do |wep,i|
-      Img.create :x => 300+30*(i%16), :y => 108+30*(i/16), :img => wep[:icon], :scale => 2
-    end
+	$weapons.each_with_index do |wep,i|
+	  Img.create :x => 300+30*(i%16), :y => 108+30*(i/16), :img => wep[:icon], :scale => 2
+	end
 
 		$utils.each_with_index do |util,i|
 			Img.create :x => 300+30*((i+$weapons.size)%16), :y => 108+30*((i+$weapons.size)/16), :img => util[:icon], :scale => 2
@@ -65,41 +65,41 @@ class ShopState < Chingu::GameState
 		if @t != @last_t
 			@popup and @popup.destroy
 			if @t and @t < 10000
-        if @t < $weapons.size
-        	w = Weapon.new(:type => $weapons[@t])
-          price = $weapons[@t][:price]
-          curmodprice = 0
-          if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
-          price_diff = curmodprice - price
-          @popup = Popup.create(:w => 200, :h => 160, :text => [
-          {:x=>10,:y=>10,:text=>$weapons[@t][:name]},
-          {:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
-          {:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
+				if @t < $weapons.size
+					w = Weapon.new(:type => $weapons[@t])
+					price = $weapons[@t][:price]
+					curmodprice = 0
+					if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
+					price_diff = curmodprice - price
+					@popup = Popup.create(:w => 200, :h => 160, :text => [
+					{:x=>10,:y=>10,:text=>$weapons[@t][:name]},
+					{:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
+					{:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
 					{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
 					{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
-          {:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
-          if price_diff < 0
-            {:x=>190,:y=>130,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
-          else
-            {:x=>190,:y=>130,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
-          end
-          ])
+					{:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
+					if price_diff < 0
+						{:x=>190,:y=>130,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
+					else
+						{:x=>190,:y=>130,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
+					end
+					])
 				elsif @t < $weapons.size + $utils.size
 					util = $utils[@t - $weapons.size]
 					@popup = Popup.create(:w => 200, :h => 140, :text =>[
 					{x:10, y:10, text: util[:name]}
 					])
-        elsif @t < $weapons.size + $utils.size + $ships.size
-          ship = $ships[@t - $weapons.size - $utils.size]
-          @popup = Popup.create(:w => 200, :h => 140, :text =>[
-          {x:10, y:10, text: ship[:name]}
-          ])
-        end
+				elsif @t < $weapons.size + $utils.size + $ships.size
+					ship = $ships[@t - $weapons.size - $utils.size]
+					@popup = Popup.create(:w => 200, :h => 140, :text =>[
+					{x:10, y:10, text: ship[:name]}
+					])
+				end
 			elsif @t and @t < 10100
 				slot = @ship.type[:slots][@t-10000]
 				mod = @ship.modules[@t-10000]
-#				if mt then mt = mt.type end
-#        if mt and mt[:type] != slot[:type] then mt = nil end
+	#				if mt then mt = mt.type end
+	#		if mt and mt[:type] != slot[:type] then mt = nil end
 				if mod
 					case slot[:type]
 					when :small_wep
@@ -128,14 +128,14 @@ class ShopState < Chingu::GameState
 		mb = $window.button_down?(Gosu::MsLeft)
 		if mb and @t
 			if @t < 10000
-        if @t < $weapons.size + $utils.size
-        	mod = if @t < $weapons.size then type=:small_wep;$weapons[@t] else type=:util;$utils[@t-$weapons.size] end
-          price = mod[:price]
-          curmodprice = 0
-          if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
-          price_diff = curmodprice - price
-          if $money >= -price_diff and type == @ship.type[:slots][@active_slot][:type]
-          	if @t < $weapons.size
+				if @t < $weapons.size + $utils.size
+					mod = if @t < $weapons.size then type=:small_wep;$weapons[@t] else type=:util;$utils[@t-$weapons.size] end
+					price = mod[:price]
+					curmodprice = 0
+					if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
+					price_diff = curmodprice - price
+					if $money >= -price_diff and type == @ship.type[:slots][@active_slot][:type]
+						if @t < $weapons.size
 							@ship.modules[@active_slot] = Weapon.new({:type=>$weapons[@t], :bullet_class=>PlayerBullet, :off => @ship.type[:slots][@active_slot][:off], :ship => @ship})
 							icon = $weapons[@t][:icon]
 							name = $weapons[@t][:name]
@@ -144,23 +144,23 @@ class ShopState < Chingu::GameState
 							icon = $utils[@t-$weapons.size][:icon]
 							name = $utils[@t-$weapons.size][:name]
 						end
-            @slot_imgs[@active_slot].destroy
-            @slot_imgs[@active_slot] = Img.create(:x => @slot_imgs[@active_slot].x, :y => @slot_imgs[@active_slot].y, :img => icon, :scale => 2)
-            @slot_txts[@active_slot].destroy
-            @slot_txts[@active_slot] = Chingu::Text.create(:x => @slot_txts[@active_slot].x, :y => @slot_txts[@active_slot].y, :text => name)
+						@slot_imgs[@active_slot].destroy
+						@slot_imgs[@active_slot] = Img.create(:x => @slot_imgs[@active_slot].x, :y => @slot_imgs[@active_slot].y, :img => icon, :scale => 2)
+						@slot_txts[@active_slot].destroy
+						@slot_txts[@active_slot] = Chingu::Text.create(:x => @slot_txts[@active_slot].x, :y => @slot_txts[@active_slot].y, :text => name)
 						if @ship.modules[@active_slot] == nil or @ship.modules[@active_slot].passive
 							4.times{|i| @key_imgs[@active_slot][i].alpha = 0}
 						else
 							4.times{|i| @key_imgs[@active_slot][i].alpha = {true => 255, false => 25}[@ship.keys[@active_slot][i]]}
 						end
-            $money += price_diff
-          end
-        elsif @t < $weapons.size + $utils.size + $ships.size
-          ship = $ships[@t-$weapons.size-$utils.size]
-          @ship.upgrade ship
-          pop_game_state
-          push_game_state ShopState.new(@ship)
-        end
+						$money += price_diff
+					end
+				elsif @t < $weapons.size + $utils.size + $ships.size
+					ship = $ships[@t-$weapons.size-$utils.size]
+					@ship.upgrade ship
+					pop_game_state
+					push_game_state ShopState.new(@ship)
+				end
 			else
 				t = @t
 				if @t >= 10100
