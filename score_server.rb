@@ -1,5 +1,6 @@
 require 'eventmachine'
 require 'json'
+require 'digest/sha2'
 
 def read game
 	fname = "scores/#{game.gsub(/[^a-zA-Z0-9_-]/, '_')}.txt"
@@ -12,7 +13,6 @@ end
 
 def save game, data
 	fname = "scores/#{game.gsub(/[^a-zA-Z0-9_-]/, '_')}.txt"
-#	puts data.inspect
 	File::open(fname, 'w') do |file|
 		file.write JSON::dump(data)
 	end
@@ -43,6 +43,31 @@ module Server
 				scores.select!{|a| if bb.include?(a['name']) then false else bb+=[a['name']]; true end}
 				save game, scores
 				send_object({})
+			rescue => e
+				send_object(error: "#{e.message}\n#{e.backtrace.join("\n")}")
+			end
+		when 'admin_get'
+			begin
+				game = data['game']
+				tok = File.read 'admintoken.pub'
+				if tok != Digest::SHA256.new.update(data['token']).hexdigest
+					send_object(error: "wrong admin password")
+				else
+					send_object(data: read(game))
+				end
+			rescue => e
+				send_object(error: "#{e.message}\n#{e.backtrace.join("\n")}")
+			end
+		when 'admin_set'
+			begin
+				game = data['game']
+				tok = File.read 'admintoken.pub'
+				if tok != Digest::SHA256.new.update(data['token']).hexdigest
+					send_object(error: "wrong admin password")
+				else
+					save game, data['data']
+					send_object({})
+				end
 			rescue => e
 				send_object(error: "#{e.message}\n#{e.backtrace.join("\n")}")
 			end
