@@ -9,8 +9,8 @@ include Gosu
 
 Image.autoload_dirs = ["data/gfx"]
 
-require_all 'src'
 
 Dir.chdir File.dirname($0) #for ocra
+require_all 'src'
 VERSION = begin open("version.txt", "r") {|f| f.read} rescue "-unknown-" end
 MainWindow.new.show
