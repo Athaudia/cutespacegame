@@ -22,7 +22,6 @@ Goal:
 		t = Chingu::Text.create("Hiscores", :x => 10, :y => 100, :scale => 1)
 		t.x = (400-t.gosu_font.text_width(t.text, 1))/2 + 400
 		hiscores = Scores::get
-		hiscores = (hiscores*10)[0,10]
 		hiscores.each_with_index do |h,i|
 			t = Chingu::Text.create("#{(i+1)}. #{h['name']} - #{h['score']}", :x => 10, :y => 130+i*15, :scale => 1)
 			t.x = (400-t.gosu_font.text_width(t.text, 1))/2 + 400
