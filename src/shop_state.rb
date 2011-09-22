@@ -72,28 +72,39 @@ class ShopState < Chingu::GameState
 					if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
 					price_diff = curmodprice - price
 					@popup = Popup.create(:w => 200, :h => 160, :text => [
-					{:x=>10,:y=>10,:text=>$weapons[@t][:name]},
-					{:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
-					{:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
-					{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
-					{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
-					{:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
-					if price_diff < 0
-						{:x=>190,:y=>130,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
-					else
-						{:x=>190,:y=>130,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
-					end
+						{:x=>10,:y=>10,:text=>$weapons[@t][:name]},
+						{:x=>10,:y=>30,:text=>"Dmg: " + w.dmg.to_s},
+						{:x=>10,:y=>50,:text=>"RPM: " + w.rpm.to_s},
+						{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
+						{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
+						{:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
+						if price_diff < 0
+							{:x=>190,:y=>130,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
+						else
+							{:x=>190,:y=>130,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
+						end
 					])
 				elsif @t < $weapons.size + $utils.size
 					util = $utils[@t - $weapons.size]
-					@popup = Popup.create(:w => 200, :h => 140, :text =>[
-					{x:10, y:10, text: util[:name]}
+					price = util[:price]
+					curmodprice = 0
+					if @ship.modules[@active_slot] then curmodprice = @ship.modules[@active_slot].type[:price] end
+					price_diff = curmodprice - price
+					@popup = Popup.create(:w => 200, :h => 100, :text =>[
+						{x:10, y:10, text: util[:name]},
+						{x:10, y:30, text: "Reps #{util[:repair]} armor every #{(util[:cooldown]/60.0*100).round/100.0} secs"},
+						{:x=>190,:y=>50,:text=>"$" + price.to_s, :align=>:right},
+						if price_diff < 0
+							{:x=>190,:y=>70,:text=>"-$" + price_diff.abs.to_s, :align=>:right, :col=>0xffff0000}
+						else
+							{:x=>190,:y=>70,:text=>"$" + price_diff.to_s, :align=>:right, :col=>0xff00ff00}
+						end
 					])
 				elsif @t < $weapons.size + $utils.size + $ships.size
 					ship = $ships[@t - $weapons.size - $utils.size]
-					@popup = Popup.create(:w => 200, :h => 140, :text =>[
+					@popup = Popup.create(:w => 200, :h => 40+20*ship[:slots].size, :text =>[
 					{x:10, y:10, text: ship[:name]}
-					])
+					]+ship[:slots].each_with_index.map{|s,i| {x:10, y:30+20*i, text: SLOTTYPEMAP[s[:type]]}})
 				end
 			elsif @t and @t < 10100
 				slot = @ship.type[:slots][@t-10000]
@@ -112,6 +123,14 @@ class ShopState < Chingu::GameState
 						{:x=>10,:y=>70,:text=>"Dps: " + w.dps.to_s},
 						{:x=>10,:y=>90,:text=>"Range: " + w.range.to_s},
 						{:x=>190,:y=>110,:text=>"$" + price.to_s, :align=>:right},
+						])
+					when :util
+						price = mod.type[:price]
+						util = mod.type
+						@popup = Popup.create(:w => 200, :h => 80, :text =>[
+							{x:10, y:10, text: util[:name]},
+							{x:10, y:30, text: "Reps #{util[:repair]} armor every #{(util[:cooldown]/60.0*100).round/100.0} secs"},
+							{:x=>190,:y=>50,:text=>"$" + price.to_s, :align=>:right}
 						])
 					end
 				end
