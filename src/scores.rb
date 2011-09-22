@@ -32,7 +32,7 @@ module Scores
 
 	def self.send_cmd cmd
 		str = JSON::dump(cmd)
-		TCPSocket.open('127.0.0.1', 4345) do |sock|
+		TCPSocket.open('lmao.rotfl.at', 4345) do |sock|
 			sock.puts([str.size, str].pack('Na*'))
 			len = sock.read(4)
 			if not len or len.size != 4 then return nil end
