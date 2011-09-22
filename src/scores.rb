@@ -44,5 +44,5 @@ module Scores
 	end
 end
 
-#puts Scores::send(name: 'Athaudia3', score: 100, time: 650.2, wave: 1, game: :csg_0_3)
+#puts Scores::send(name: 'Wheee!!!', score: 1000000, time: 650.2, wave: 1, game: :csg_0_3)
 #puts Scores::get.inspect

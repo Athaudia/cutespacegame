@@ -8,7 +8,7 @@ class HiscoreState < Chingu::GameState
 		@text = Chingu::Text.create("", :x => 300, :y => 520, :scale => 2)
 		Chingu::Text.create("Game Over", :y =>30, :scale => 4).center
 		Chingu::Text.create("#{$points} Points", :y =>100, :scale => 2).center
-		Chingu::Text.create("Enter name and press enter to send score to server, or esc to skip", :y =>580, :scale => 1).center
+		Chingu::Text.create("            Enter name and press enter to send score to server, or esc to skip", :y =>580, :scale => 1).center
 		@iw = @text.gosu_font.text_width("WWWWWWWWWWWWWWWW",2)
 		@ih = @text.gosu_font.height * 2
 		@text.x = (800-@iw)/2
@@ -18,6 +18,20 @@ class HiscoreState < Chingu::GameState
 		hiscores.each_with_index do |h,i|
 			Chingu::Text.create("#{(i+1)}. #{h['name']} - #{h['score']}", :x => 10, :y => 170+i*30, :scale => 2).center
 		end
+		self.input = {:return => :submit, escape: :cancel}
+	end
+
+	def submit
+		if @ti.text.size > 0
+			Scores::send name: @ti.text, game: :csg_0_3, score: $points, wave: $wave, time: $tick/60.0
+		end
+		cancel
+	end
+
+	def cancel
+		pop_game_state
+		push_game_state Game
+		push_game_state InfoScreen
 	end
 
 	def update

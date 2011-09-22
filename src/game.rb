@@ -151,5 +151,14 @@ class Game < Chingu::GameState
 		end
 
 		$tick += 1
+		if @until_hiscore
+			@until_hiscore -= 1
+			if @until_hiscore <= 0
+				$wave = @wave
+				switch_game_state HiscoreState
+			end
+		else
+			if $player.paused? then @until_hiscore = 200 end
+		end
 	end
 end
