@@ -108,8 +108,6 @@ class Game < Chingu::GameState
 
 	def update
 		super
-		if not @notfirst then push_game_state HiscoreState; @notfirst = true; end
-
 		self.viewport.center_around @player
 
 		if $config[:stars]

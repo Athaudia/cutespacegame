@@ -3,6 +3,7 @@ class MainWindow < Chingu::Window
 		super 800, 600, false
 		retrofy
 		push_game_state Game
+		push_game_state InfoScreen
 	end
 	def update
 		super
