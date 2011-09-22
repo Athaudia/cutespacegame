@@ -80,5 +80,5 @@ module Server
 end
 
 EM.run do
-	EM.start_server '127.0.0.1', 4345, Server
-end
+	EM.start_server '0.0.0.0', 4345, Server
+end if Dir['admintoken.pub'].size > 0
