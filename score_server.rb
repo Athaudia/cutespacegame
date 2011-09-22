@@ -1,14 +1,51 @@
 require 'eventmachine'
 require 'json'
 
+def read game
+	fname = "scores/#{game.gsub(/[^a-zA-Z0-9_-]/, '_')}.txt"
+	begin
+		JSON::load File::read(fname)
+	rescue
+		[]
+	end
+end
+
+def save game, data
+	fname = "scores/#{game.gsub(/[^a-zA-Z0-9_-]/, '_')}.txt"
+#	puts data.inspect
+	File::open(fname, 'w') do |file|
+		file.write JSON::dump(data)
+	end
+end
+
 module Server
 	include EM::P::ObjectProtocol
 	def receive_object(data)
 		puts data.inspect
 		case data['cmd']
 		when 'get_top10'
-			scores = [{name: 'Athaudia', score: 100000}, {name: 'Athea', score: 14564}]
-			send_object({scores: scores})
+			begin
+				send_object({scores: read(data['game'])[0,10]})
+			rescue => e
+				send_object(error: "#{e.message}\n#{e.backtrace.join("\n")}")
+			end
+		when 'send_score'
+			begin
+				game = data['game']
+				scores = read(game)
+				data.delete 'cmd'
+				data.delete 'game'
+				scores << data
+				scores.sort! do |a,b|
+					b['score'] <=> a['score']
+				end
+				bb = []
+				scores.select!{|a| if bb.include?(a['name']) then false else bb+=[a['name']]; true end}
+				save game, scores
+				send_object({})
+			rescue => e
+				send_object(error: "#{e.message}\n#{e.backtrace.join("\n")}")
+			end
 		when nil
 			puts 'malformed request'
 		end

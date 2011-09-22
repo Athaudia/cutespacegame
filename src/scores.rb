@@ -4,9 +4,29 @@ require 'json'
 module Scores
 	def self.get
 		begin
-			send_cmd(cmd: :get_top10, game: :csg_0_3)['scores']
+			r = send_cmd(cmd: :get_top10, game: :csg_0_3)
+			if r['error']
+				puts 'score server error:'
+				puts r['error']
+				[]
+			else
+				r['scores']
+			end
 		rescue
 			[]
+		end
+	end
+
+	def self.send data
+		data[:cmd] = :send_score
+		begin
+			r = self.send_cmd(data)
+			if r['error']
+				puts 'score server error:'
+				puts r['error']
+			end
+		rescue
+			nil
 		end
 	end
 
@@ -24,4 +44,5 @@ module Scores
 	end
 end
 
+#puts Scores::send(name: 'Athaudia3', score: 100, time: 650.2, wave: 1, game: :csg_0_3)
 #puts Scores::get.inspect
